@@ -1,7 +1,4 @@
-# For Provider
-provider "aws" {
-  region = var.AWS_REGION
-}
+
 
 # For VPC
 resource "aws_vpc" "shan_vpc" {
