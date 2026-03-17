@@ -16,11 +16,3 @@ resource "aws_key_pair" "shan" {
 }
 
 
-resource "aws_s3_bucket" "demo_bucket" {
-  bucket = var.bucket_name
-
-  tags = {
-    Name = "TerraformDemo"
-    Env  = var.environment
-  }
-}
