@@ -1,58 +1,40 @@
-
-
-# For VPC
 resource "aws_vpc" "shan_vpc" {
-  cidr_block           = "10.0.0.0/16"
+  cidr_block           = var.vpc_cidr
   instance_tenancy     = "default"
-  enable_dns_support   = "true"
-  enable_dns_hostnames = "true"
-  tags = {
-    Name = "shan-vpc"
-  }
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+  tags = { Name = "${var.environment}-vpc" }
 }
 
-# For Subnets
 resource "aws_subnet" "public_subnet" {
   vpc_id                  = aws_vpc.shan_vpc.id
-  cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = "true"
-  availability_zone       = "us-east-1a"
-  tags = {
-    Name = "public_subnet"
-  }
+  cidr_block              = var.public_subnet_cidr
+  map_public_ip_on_launch = true
+  availability_zone       = "ap-south-1a"
+  tags = { Name = "${var.environment}-public-subnet" }
 }
 
 resource "aws_subnet" "private_subnet" {
-  vpc_id                  = aws_vpc.shan_vpc.id
-  cidr_block              = "10.0.4.0/24"
-  map_public_ip_on_launch = "true"
-  availability_zone       = "us-east-1a"
-  tags = {
-    Name = "private_subnet"
-  }
+  vpc_id            = aws_vpc.shan_vpc.id
+  cidr_block        = var.private_subnet_cidr
+  availability_zone = "ap-south-1a"
+  tags = { Name = "${var.environment}-private-subnet" }
 }
 
-# For Internet Gateway
-resource "aws_internet_gateway" "shan-igw" {
+resource "aws_internet_gateway" "shan_igw" {
   vpc_id = aws_vpc.shan_vpc.id
-  tags = {
-    Name = "shan-IGW"
-  }
+  tags   = { Name = "${var.environment}-igw" }
 }
 
-# For Route Tables
 resource "aws_route_table" "public_rt" {
   vpc_id = aws_vpc.shan_vpc.id
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.shan-igw.id
+    gateway_id = aws_internet_gateway.shan_igw.id
   }
-  tags = {
-    Name = "public_rt"
-  }
+  tags = { Name = "${var.environment}-public-rt" }
 }
 
-# For Route associations public
 resource "aws_route_table_association" "public_rt_asn" {
   subnet_id      = aws_subnet.public_subnet.id
   route_table_id = aws_route_table.public_rt.id
