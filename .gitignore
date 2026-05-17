@@ -1,2 +1,5 @@
 .terraform/
 .git
+*.tfstate
+*.tfstate.backup
+*.log
