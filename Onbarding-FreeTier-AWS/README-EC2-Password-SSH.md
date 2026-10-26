@@ -65,6 +65,7 @@ Get the **Public IPv4** from the EC2 console.
 | 🟦 **PowerShell** | `ssh shanthosh@PUBLICIP` |
 | 🐧 **WSL** | `ssh shanthosh@PUBLICIP` |
 | 🖧 **PuTTY** | Host: `PUBLICIP`, Port `22` → Open → login `shanthosh` → enter password |
+| 🟦 **VScode** | `New Terminal--> ssh shanthosh@PUBLICIP` |
 
 ---
 
