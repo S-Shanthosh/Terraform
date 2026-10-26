@@ -1,0 +1,64 @@
+import boto3, os
+
+sns = boto3.client("sns")
+TOPIC = os.environ["SNS_TOPIC_ARN"]
+
+def alert(msg):
+    sns.publish(TopicArn=TOPIC, Subject="AWS cost alert", Message=msg[:250000])
+
+def lambda_handler(event, context):
+    regions = [r["RegionName"] for r in boto3.client("ec2", region_name="us-east-1").describe_regions()["Regions"]]
+    stopped, alerts = [], []
+
+    for region in regions:
+        ec2 = boto3.client("ec2", region_name=region)
+        rds = boto3.client("rds", region_name=region)
+
+        # EC2 stop
+        try:
+            resp = ec2.describe_instances(Filters=[{"Name": "instance-state-name", "Values": ["running"]}])
+            ids = [i["InstanceId"] for r in resp["Reservations"] for i in r["Instances"]]
+            if ids:
+                ec2.stop_instances(InstanceIds=ids)
+                stopped.append(f"{region} EC2: {ids}")
+        except Exception as e:
+            alerts.append(f"{region} EC2 error: {e}")
+
+        # RDS instances (non-Aurora, non-replica)
+        try:
+            for db in rds.describe_db_instances()["DBInstances"]:
+                if (db["DBInstanceStatus"] == "available"
+                        and not db.get("DBClusterIdentifier")
+                        and not db.get("ReadReplicaSourceDBInstanceIdentifier")):
+                    rds.stop_db_instance(DBInstanceIdentifier=db["DBInstanceIdentifier"])
+                    stopped.append(f"{region} RDS: {db['DBInstanceIdentifier']}")
+            # Aurora / Multi-AZ clusters
+            for c in rds.describe_db_clusters()["DBClusters"]:
+                if c["Status"] == "available":
+                    rds.stop_db_cluster(DBClusterIdentifier=c["DBClusterIdentifier"])
+                    stopped.append(f"{region} RDS cluster: {c['DBClusterIdentifier']}")
+        except Exception as e:
+            alerts.append(f"{region} RDS error: {e}")
+
+        # Elastic IPs
+        try:
+            for a in ec2.describe_addresses()["Addresses"]:
+                state = "ATTACHED" if a.get("AssociationId") else "UNATTACHED"
+                alerts.append(f"{region} EIP {a['PublicIp']} ({state})")
+        except Exception as e:
+            alerts.append(f"{region} EIP error: {e}")
+
+        # NAT gateways
+        try:
+            nats = ec2.describe_nat_gateways(
+                Filter=[{"Name": "state", "Values": ["pending", "available"]}])["NatGateways"]
+            for n in nats:
+                alerts.append(f"{region} NAT GW {n['NatGatewayId']} ({n['State']})")
+        except Exception as e:
+            alerts.append(f"{region} NAT error: {e}")
+
+    if alerts:
+        alert("Live billable resources found:\n" + "\n".join(alerts) +
+              ("\n\nStopped:\n" + "\n".join(stopped) if stopped else ""))
+    print(stopped, alerts)
+    return {"stopped": stopped, "alerts": alerts}
