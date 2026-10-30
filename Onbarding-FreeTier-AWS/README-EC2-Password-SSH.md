@@ -79,3 +79,31 @@ Get the **Public IPv4** from the EC2 console.
 
 ## 🧹 Cleanup
 **EC2 → Instances → Terminate** when done. 🗑️
+
+
+
+**Older version**
+**Just for info**
+#!/bin/bash
+set -e
+
+USERNAME="shanthosh"
+USERPASS="ChangeMe-Str0ng!Pass"   
+
+# Create user (idempotent) and set password
+id "$USERNAME" &>/dev/null || useradd -m -s /bin/bash "$USERNAME"
+echo "${USERNAME}:${USERPASS}" | chpasswd
+
+# Passwordless sudo, validated before it is installed
+echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-${USERNAME}
+chmod 440 /etc/sudoers.d/90-${USERNAME}
+visudo -cf /etc/sudoers.d/90-${USERNAME}
+
+# Enable SSH password authentication (also overrides cloud-image drop-ins)
+sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+for f in /etc/ssh/sshd_config.d/*.conf; do
+  [ -f "$f" ] && sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' "$f"
+done
+
+# Restart SSH (service name differs by distro)
+systemctl restart sshd 2>/dev/null || systemctl restart ssh
