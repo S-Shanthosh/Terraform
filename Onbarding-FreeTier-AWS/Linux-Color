@@ -36,7 +36,7 @@ pip3 install --user lolcat || true
 # --- 5. lnav (log viewer) — self-cleaning ---
 if ! command -v lnav >/dev/null; then
   TMPDIR=$(mktemp -d)
-  curl -sSL -o "$TMPDIR/lnav.zip" \
+  curl -fsSL -o "$TMPDIR/lnav.zip" \
     https://github.com/tstack/lnav/releases/download/v0.14.1/lnav-0.14.1-linux-musl-x86_64.zip
   unzip -q -o "$TMPDIR/lnav.zip" -d "$TMPDIR"
   sudo mv "$TMPDIR/lnav-0.14.1/lnav" /usr/local/bin/
@@ -46,7 +46,7 @@ fi
 # --- 6. bat (cat with syntax highlighting) ---
 if ! command -v bat >/dev/null; then
   sudo dnf copr enable fcsm/bat -y || true
-  sudo dnf install -y bat || true
+  sudo dnf install -y --allowerasing bat || true
 fi
 
 # --- 7. Custom prompt — write to BOTH .bashrc and .bash_profile ---
@@ -60,32 +60,34 @@ EOF
   fi
 done
 
-# --- 8. Modern CLI: ripgrep + fd (prebuilt binaries, no EPEL) ---
+# --- 8. Modern CLI: ripgrep + fd (direct binaries, exact tags) ---
 ARCH=$(uname -m)
 case "$ARCH" in
-  x86_64)  RG_ARCH="x86_64-unknown-linux-musl"; FD_ARCH="x86_64-unknown-linux-musl" ;;
-  aarch64) RG_ARCH="aarch64-unknown-linux-musl"; FD_ARCH="aarch64-unknown-linux-musl" ;;
-  *)       RG_ARCH=""; FD_ARCH="" ;;
+  x86_64)  TRIPLE="x86_64-unknown-linux-musl" ;;
+  aarch64) TRIPLE="aarch64-unknown-linux-musl" ;;
+  *)       TRIPLE="" ;;
 esac
 
-# ripgrep
-if [ -n "$RG_ARCH" ] && ! command -v rg >/dev/null; then
-  TMPDIR=$(mktemp -d)
-  curl -sSL -o "$TMPDIR/rg.tar.gz" \
-    "https://github.com/BurntSushi/ripgrep/releases/latest/download/ripgrep-14.1.1-${RG_ARCH}.tar.gz"
-  tar -xzf "$TMPDIR/rg.tar.gz" -C "$TMPDIR"
-  sudo mv "$TMPDIR"/ripgrep-*/rg /usr/local/bin/
-  rm -rf "$TMPDIR"
-fi
+if [ -n "$TRIPLE" ]; then
+  # ripgrep 14.1.1
+  if ! command -v rg >/dev/null; then
+    TMPDIR=$(mktemp -d)
+    curl -fsSL -o "$TMPDIR/rg.tar.gz" \
+      "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-${TRIPLE}.tar.gz"
+    tar -xzf "$TMPDIR/rg.tar.gz" -C "$TMPDIR"
+    sudo mv "$TMPDIR"/ripgrep-14.1.1-*/rg /usr/local/bin/
+    rm -rf "$TMPDIR"
+  fi
 
-# fd
-if [ -n "$FD_ARCH" ] && ! command -v fd >/dev/null; then
-  TMPDIR=$(mktemp -d)
-  curl -sSL -o "$TMPDIR/fd.tar.gz" \
-    "https://github.com/sharkdp/fd/releases/latest/download/fd-v9.0.0-${FD_ARCH}.tar.gz"
-  tar -xzf "$TMPDIR/fd.tar.gz" -C "$TMPDIR"
-  sudo mv "$TMPDIR"/fd-v*/fd /usr/local/bin/
-  rm -rf "$TMPDIR"
+  # fd 10.2.0
+  if ! command -v fd >/dev/null; then
+    TMPDIR=$(mktemp -d)
+    curl -fsSL -o "$TMPDIR/fd.tar.gz" \
+      "https://github.com/sharkdp/fd/releases/download/v10.2.0/fd-v10.2.0-${TRIPLE}.tar.gz"
+    tar -xzf "$TMPDIR/fd.tar.gz" -C "$TMPDIR"
+    sudo mv "$TMPDIR"/fd-v10.2.0-*/fd /usr/local/bin/
+    rm -rf "$TMPDIR"
+  fi
 fi
 
 echo "✅ Setup complete. Run: source ~/.bashrc && source ~/.bash_profile"
