@@ -159,27 +159,7 @@ echo "Linux setup complete. Activate with:"
 echo "  source ~/.bashrc"
 
 echo
-echo "========== NATIVE LINUX LOG ANALYSIS =========="
-echo "Use standard Linux commands; no log-command aliases are created."
-echo
-echo "View current boot logs:"
-echo "  sudo journalctl -b"
-echo
-echo "View SSH service logs:"
-echo "  sudo journalctl -u sshd -b"
-echo
-echo "View warnings and errors:"
-echo "  sudo journalctl -p warning -b"
-echo
-echo "Follow new system log entries:"
-echo "  sudo journalctl -f"
-echo
-echo "Open journal output in lnav for interactive analysis:"
-echo "  sudo journalctl -b --no-pager | lnav -"
-echo
-echo "Open a specific log file (if it exists):"
-echo "  sudo lnav /var/log/messages"
-echo "================================================"
+echo "Log analysis guide: Onbarding-FreeTier-AWS/LOG-ANALYSIS.md"
 echo
 echo "========== WINDOWS / WINDOWS TERMINAL STEPS =========="
 echo "1. Download JetBrainsMono Nerd Font:"
