@@ -3,7 +3,7 @@
 set -e
 
 # --- 1. Base packages ---
-sudo dnf install -y git make gawk python3-pip unzip
+sudo dnf install -y git make gawk python3-pip unzip curl tar
 
 # --- 2. Colors + aliases in ~/.bashrc (idempotent) ---
 if ! grep -q "Color enhancements" ~/.bashrc; then
@@ -49,13 +49,43 @@ if ! command -v bat >/dev/null; then
   sudo dnf install -y bat || true
 fi
 
-# --- 7. Custom prompt (purple user@host, yellow dir) — idempotent ---
-if ! grep -q "Custom prompt color" ~/.bashrc; then
-cat >> ~/.bashrc << 'EOF'
+# --- 7. Custom prompt — write to BOTH .bashrc and .bash_profile ---
+for rc in "$HOME/.bashrc" "$HOME/.bash_profile"; do
+  if [ -f "$rc" ] && ! grep -q "Custom prompt color" "$rc"; then
+cat >> "$rc" << 'EOF'
 
 # Custom prompt color (purple user@host, yellow dir)
 PS1='\[\e[1;35m\][\u@\h\[\e[0m\] \[\e[1;33m\]\W\[\e[0m\]]\$ '
 EOF
+  fi
+done
+
+# --- 8. Modern CLI: ripgrep + fd (prebuilt binaries, no EPEL) ---
+ARCH=$(uname -m)
+case "$ARCH" in
+  x86_64)  RG_ARCH="x86_64-unknown-linux-musl"; FD_ARCH="x86_64-unknown-linux-musl" ;;
+  aarch64) RG_ARCH="aarch64-unknown-linux-musl"; FD_ARCH="aarch64-unknown-linux-musl" ;;
+  *)       RG_ARCH=""; FD_ARCH="" ;;
+esac
+
+# ripgrep
+if [ -n "$RG_ARCH" ] && ! command -v rg >/dev/null; then
+  TMPDIR=$(mktemp -d)
+  curl -sSL -o "$TMPDIR/rg.tar.gz" \
+    "https://github.com/BurntSushi/ripgrep/releases/latest/download/ripgrep-14.1.1-${RG_ARCH}.tar.gz"
+  tar -xzf "$TMPDIR/rg.tar.gz" -C "$TMPDIR"
+  sudo mv "$TMPDIR"/ripgrep-*/rg /usr/local/bin/
+  rm -rf "$TMPDIR"
 fi
 
-echo "✅ Setup complete. Run: source ~/.bashrc"
+# fd
+if [ -n "$FD_ARCH" ] && ! command -v fd >/dev/null; then
+  TMPDIR=$(mktemp -d)
+  curl -sSL -o "$TMPDIR/fd.tar.gz" \
+    "https://github.com/sharkdp/fd/releases/latest/download/fd-v9.0.0-${FD_ARCH}.tar.gz"
+  tar -xzf "$TMPDIR/fd.tar.gz" -C "$TMPDIR"
+  sudo mv "$TMPDIR"/fd-v*/fd /usr/local/bin/
+  rm -rf "$TMPDIR"
+fi
+
+echo "✅ Setup complete. Run: source ~/.bashrc && source ~/.bash_profile"
