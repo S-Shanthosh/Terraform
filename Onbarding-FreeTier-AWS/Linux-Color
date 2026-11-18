@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# setup-terminal.sh — one-shot terminal color for Amazon Linux 2023
+set -e
+
+# --- 1. Base packages ---
+sudo dnf install -y git make gawk python3-pip unzip
+
+# --- 2. Colors + aliases in ~/.bashrc (idempotent) ---
+if ! grep -q "Color enhancements" ~/.bashrc; then
+cat >> ~/.bashrc << 'EOF'
+
+# ===== Color enhancements =====
+alias ls='ls --color=auto'
+alias ll='ls -alF --color=auto'
+alias la='ls -A --color=auto'
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias diff='diff --color=auto'
+export LESS='-R'
+export MANPAGER='less -R'
+# ===== End color enhancements =====
+EOF
+fi
+
+# --- 3. ble.sh — live syntax highlighting while typing ---
+if [ ! -f ~/.local/share/blesh/ble.sh ]; then
+  git clone --recursive --depth 1 --shallow-submodules \
+    https://github.com/akinomyoga/ble.sh.git /tmp/ble.sh
+  make -C /tmp/ble.sh install PREFIX=~/.local
+  echo 'source ~/.local/share/blesh/ble.sh' >> ~/.bashrc
+fi
+
+# --- 4. lolcat (rainbow output) ---
+pip3 install --user lolcat || true
+
+# --- 5. lnav (log viewer) ---
+if ! command -v lnav >/dev/null; then
+  curl -LO https://github.com/tstack/lnav/releases/download/v0.14.1/lnav-0.14.1-linux-musl-x86_64.zip
+  unzip -o lnav-0.14.1-linux-musl-x86_64.zip
+  sudo mv lnav-0.14.1/lnav /usr/local/bin/
+fi
+
+# --- 6. bat (cat with syntax highlighting) ---
+if ! command -v bat >/dev/null; then
+  sudo dnf copr enable fcsm/bat -y || true
+  sudo dnf install -y bat || true
+fi
+
+echo "✅ Setup complete. Run: source ~/.bashrc"
