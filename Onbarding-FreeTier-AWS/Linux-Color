@@ -8,7 +8,6 @@ sudo dnf install -y git make gawk python3-pip unzip
 # --- 2. Colors + aliases in ~/.bashrc (idempotent) ---
 if ! grep -q "Color enhancements" ~/.bashrc; then
 cat >> ~/.bashrc << 'EOF'
-
 # ===== Color enhancements =====
 alias ls='ls --color=auto'
 alias ll='ls -alF --color=auto'
@@ -44,6 +43,15 @@ fi
 if ! command -v bat >/dev/null; then
   sudo dnf copr enable fcsm/bat -y || true
   sudo dnf install -y bat || true
+fi
+
+# --- 7. Custom purple prompt (idempotent) ---
+if ! grep -q "Custom prompt color" ~/.bashrc; then
+cat >> ~/.bashrc << 'EOF'
+
+# Custom prompt color (purple user, purple dir)
+PS1='\[\e[1;35m\][\u@\h\[\e[0m\] \[\e[1;35m\]\W\[\e[0m\]]\$ '
+EOF
 fi
 
 echo "✅ Setup complete. Run: source ~/.bashrc"
