@@ -1,6 +1,6 @@
 # Linux Log Analysis
 
-This guide uses native Linux commands. Linux-Color does not create aliases that rename or hide standard Linux commands.
+This guide uses native Linux commands. Linux-Color does not create aliases that rename or hide standard commands.
 
 ## 1. View system logs
 
@@ -50,21 +50,37 @@ Follow SSH service logs live:
 sudo journalctl -u sshd -f
 ```
 
-## 4. Analyse journal output with lnav
+## 4. Interactive log analysis with service colours
 
-Use the native `journalctl` command and pipe its output into `lnav`:
+For lnav's structured journal view, output journal entries as JSON. lnav includes a built-in `journald_json_log` format that syntax-colours the systemd unit, program identifier, and PID as identifiers. This applies to journal entries from different services; it is not limited to SSH.
 
-```bash
-sudo journalctl -b --no-pager | lnav -
-```
-
-For SSH:
+Current boot:
 
 ```bash
-sudo journalctl -u sshd -b --no-pager | lnav -
+sudo journalctl -b -o json --no-pager | lnav -
 ```
 
-Inside lnav, use `q` to quit and `/` to search. Use `e` and `w` to navigate error and warning entries where supported by the current lnav view.
+Recent entries:
+
+```bash
+sudo journalctl -n 200 -o json --no-pager | lnav -
+```
+
+SSH service entries:
+
+```bash
+sudo journalctl -u sshd -b -o json --no-pager | lnav -
+```
+
+Follow new entries:
+
+```bash
+sudo journalctl -f -o json --no-pager | lnav -
+```
+
+In lnav, press `q` to quit and `/` to search. Use `e` and `w` to navigate error and warning entries where supported by the current view.
+
+**Why JSON output?** The normal human-readable `journalctl` output is useful for everyday reading. JSON exposes structured fields such as `_SYSTEMD_UNIT`, `SYSLOG_IDENTIFIER`, and `_PID`, which lnav's built-in journal format can display and syntax-colour individually.
 
 ## 5. Inspect traditional log files
 
