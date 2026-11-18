@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 # setup-terminal.sh — one-shot terminal color for Amazon Linux 2023
 set -e
@@ -53,7 +54,6 @@ fi
 for rc in "$HOME/.bashrc" "$HOME/.bash_profile"; do
   if [ -f "$rc" ] && ! grep -q "Custom prompt color" "$rc"; then
 cat >> "$rc" << 'EOF'
-
 # Custom prompt color (purple user@host, yellow dir)
 PS1='\[\e[1;35m\][\u@\h\[\e[0m\] \[\e[1;33m\]\W\[\e[0m\]]\$ '
 EOF
@@ -69,6 +69,7 @@ case "$ARCH" in
 esac
 
 if [ -n "$TRIPLE" ]; then
+
   # ripgrep 14.1.1
   if ! command -v rg >/dev/null; then
     TMPDIR=$(mktemp -d)
@@ -86,6 +87,26 @@ if [ -n "$TRIPLE" ]; then
       "https://github.com/sharkdp/fd/releases/download/v10.2.0/fd-v10.2.0-${TRIPLE}.tar.gz"
     tar -xzf "$TMPDIR/fd.tar.gz" -C "$TMPDIR"
     sudo mv "$TMPDIR"/fd-v10.2.0-*/fd /usr/local/bin/
+    rm -rf "$TMPDIR"
+  fi
+
+fi
+
+# --- 9. eza (modern ls replacement) ---
+if ! command -v eza >/dev/null; then
+  ARCH=$(uname -m)
+  case "$ARCH" in
+    x86_64)  EZA_ARCH="x86_64-unknown-linux-gnu" ;;
+    aarch64) EZA_ARCH="aarch64-unknown-linux-gnu" ;;
+    *)       EZA_ARCH="" ;;
+  esac
+
+  if [ -n "$EZA_ARCH" ]; then
+    TMPDIR=$(mktemp -d)
+    curl -fsSL -o "$TMPDIR/eza.tar.gz" \
+      "https://github.com/eza-community/eza/releases/latest/download/eza_${EZA_ARCH}.tar.gz"
+    tar -xzf "$TMPDIR/eza.tar.gz" -C "$TMPDIR"
+    sudo mv "$TMPDIR/eza" /usr/local/bin/
     rm -rf "$TMPDIR"
   fi
 fi
