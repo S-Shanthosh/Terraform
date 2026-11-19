@@ -25,13 +25,13 @@
 | 4 | [🎨 lnav (coloured)](#4--interactive-analysis-with-lnav) | Interactive, colourful view |
 | 5 | [📂 Log files](#5--traditional-log-files) | `/var/log` files |
 | 6 | [🔎 grep search](#6--search-with-grep) | Find keywords |
-| 7 | [⚡ Toolkit shortcuts](#7--log-toolkit-shortcuts-section-11) | Aliases from Linux-Color |
+| 7 | [⚡ Native commands & optional shortcuts](#7--native-commands-and-optional-shortcuts) | Learn first, shortcut second |
 | 8 | [📊 Access-log analysis](#8--access-log-analysis) | Top IPs, 404s |
 | 9 | [💾 Disk & performance](#9--disk--performance-checks) | Full disk, high CPU |
 | 10 | [🗓️ Practice plan](#10-️-daily-practice-plan) | Build the skill |
 
 > [!NOTE]
-> Linux-Color never renames standard commands. The shortcuts in section 7 are **new** names, so `journalctl`, `grep`, `ls` still work normally.
+ > **Learning rule:** use the native command first. Optional Linux-Color shortcuts are separate and never replace or rename standard commands.
 
 ---
 
@@ -119,12 +119,41 @@ sudo journalctl -b --no-pager | grep -iE 'error|failed|denied|warning'
 
 ---
 
-## 7. ⚡ Log toolkit shortcuts (Section 11)
+## 7. ⚡ Native commands and optional shortcuts
 
-Installed by the Linux-Color log toolkit. Run `source ~/.bashrc` after install.
+**Learn and practise the native command first.** Linux-Color shortcuts are optional conveniences; they are not required.
 
-| Shortcut | What it does |
-|----------|--------------|
+| Task | Native Linux command (learn this) | Optional shortcut |
+|---|---|---|
+| Last 50 boot errors | `sudo journalctl -p err -b --no-pager | tail -50` | `jerr` |
+| Follow journal live | `sudo journalctl -f` | `jf` |
+| Logs for one service | `sudo journalctl -u sshd` | `jsvc sshd` |
+| Search files for errors | `sudo grep -rniE 'error|fail|fatal|denied|timeout|oom|segfault' /var/log` | `errs /var/log` |
+| Open logs in lnav | `sudo lnav /var/log` | `lg` |
+| Find largest log files | `sudo du -ah /var/log 2>/dev/null | sort -rh | head -15` | `biglogs` |
+| Top client IPs | `awk '{print $1}' access.log | sort | uniq -c | sort -rn | head -10` | `topip access.log` |
+| Top 404 URLs | `awk '$9==404{print $7}' access.log | sort | uniq -c | sort -rn | head -10` | `top404 access.log` |
+
+### Enable shortcuts only if you want them
+
+The installer saves shortcuts separately and does **not** load them automatically:
+
+```bash
+source ~/.config/linux-color/log-toolkit.sh
+```
+
+They are available only in the current shell session unless you choose to source the file from your own shell configuration.
+
+### Understand the building blocks
+
+- `grep` searches text; `-r` searches directories recursively; `-n` shows line numbers; `-i` ignores case.
+- `awk` extracts fields from each log line.
+- `sort` orders results.
+- `uniq -c` counts adjacent repeated lines (sort first).
+- `head` limits the displayed results.
+- `du -ah` reports file and directory sizes.
+
+----------|--------------|
 | `jerr` | Last 50 errors this boot |
 | `jf` | Follow the journal live |
 | `jsvc <unit>` | Journal of one service |
@@ -170,12 +199,12 @@ cat app.log | jq 'select(.level=="ERROR")'
 |---------|---------|
 | Disk full? | `df -h` |
 | Which folder is big? | `sudo ncdu /` |
-| Big logs | `biglogs` |
+| Big logs | `sudo du -ah /var/log 2>/dev/null | sort -rh | head -15` |
 | Live CPU/memory | `htop` |
 | Disk I/O | `iostat -x 2 5` |
 | Memory | `free -h` |
 | OOM kills | `sudo journalctl -k | grep -i oom` |
-| Open ports | `ports` |
+| Open ports | `ss -tulpen` |
 
 ---
 
@@ -183,10 +212,10 @@ cat app.log | jq 'select(.level=="ERROR")'
 
 | Day | Practice |
 |-----|----------|
-| Mon | `jerr`, find one error, explain it |
-| Tue | `jsvc sshd`, read login attempts |
-| Wed | `lg`, navigate with `e` / `w` |
-| Thu | `topip` and `top404` on a web log |
+| Mon | Run `sudo journalctl -p err -b`; find one error and explain it |
+| Tue | Run `sudo journalctl -u sshd`; read login attempts |
+| Wed | Open a log with `lnav`; navigate with `e` / `w` |
+| Thu | Build the `awk | sort | uniq -c` pipelines for IPs and 404s |
 | Fri | Break something (stop a service), find it in logs |
 
 ---
@@ -196,7 +225,7 @@ cat app.log | jq 'select(.level=="ERROR")'
 1. 🕐 **Time first**: narrow to the incident window.
 2. 🚨 **Errors first**: `-p err`, then widen.
 3. 🔗 **Follow the chain**: first error is usually the cause, not the last.
-4. 🧠 **Learn the basics**: `journalctl`, `grep`, `less`, `tail`. Tools like `lnav` enhance them, they don't replace them.
+4. 🧠 **Native first**: learn `journalctl`, `grep`, `awk`, `sort`, `uniq`, `du`, `less`, and `tail`. Shortcuts are optional.
 
 <div align="center">
 
