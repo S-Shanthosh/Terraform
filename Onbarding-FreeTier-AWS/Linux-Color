@@ -20,7 +20,7 @@ WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
 echo "==> Installing base packages..."
-sudo dnf install -y git make gawk python3-pip unzip curl tar
+sudo dnf install -y git make gawk python3-pip unzip curl-minimal tar
 
 # --- 1. Classic colour support ---
 if ! grep -q "Linux-Color: classic colours" "$HOME/.bashrc" 2>/dev/null; then
