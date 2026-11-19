@@ -1,111 +1,205 @@
-# Linux Log Analysis
+<div align="center">
 
-This guide uses native Linux commands. Linux-Color does not create aliases that rename or hide standard commands.
+# 🔍 Linux Log Analysis Handbook
 
-## 1. View system logs
+**Amazon Linux 2023 · journald · lnav · DevOps Troubleshooting**
 
-Show logs from the current boot:
+![Linux](https://img.shields.io/badge/Linux-AL2023-FCC624?logo=linux&logoColor=black)
+![AWS](https://img.shields.io/badge/AWS-EC2-FF9900?logo=amazonaws&logoColor=white)
+![lnav](https://img.shields.io/badge/Tool-lnav-2ea44f)
+![Level](https://img.shields.io/badge/Level-Beginner→Pro-blue)
 
-```bash
-sudo journalctl -b
-```
+*Find the problem fast. Read logs like a pro.*
 
-Show the most recent 100 entries:
+</div>
 
-```bash
-sudo journalctl -n 100 --no-pager
-```
+---
 
-Follow new entries as they arrive:
+## 🧭 Quick Navigation
 
-```bash
-sudo journalctl -f
-```
+| # | Section | Goal |
+|---|---------|------|
+| 1 | [📜 View logs](#1--view-system-logs) | See what happened |
+| 2 | [🚨 Severity filters](#2--filter-by-severity) | Show only errors/warnings |
+| 3 | [🛠️ Inspect a service](#3-️-inspect-a-service) | Debug one service |
+| 4 | [🎨 lnav (coloured)](#4--interactive-analysis-with-lnav) | Interactive, colourful view |
+| 5 | [📂 Log files](#5--traditional-log-files) | `/var/log` files |
+| 6 | [🔎 grep search](#6--search-with-grep) | Find keywords |
+| 7 | [⚡ Toolkit shortcuts](#7--log-toolkit-shortcuts-section-11) | Aliases from Linux-Color |
+| 8 | [📊 Access-log analysis](#8--access-log-analysis) | Top IPs, 404s |
+| 9 | [💾 Disk & performance](#9--disk--performance-checks) | Full disk, high CPU |
+| 10 | [🗓️ Practice plan](#10-️-daily-practice-plan) | Build the skill |
 
-## 2. Filter by severity
+> [!NOTE]
+> Linux-Color never renames standard commands. The shortcuts in section 7 are **new** names, so `journalctl`, `grep`, `ls` still work normally.
 
-Show warnings and more severe messages:
+---
 
-```bash
-sudo journalctl -p warning -b
-```
+## 1. 📜 View system logs
 
-Show errors and more severe messages:
+| Task | Command |
+|------|---------|
+| Current boot | `sudo journalctl -b` |
+| Last 100 entries | `sudo journalctl -n 100 --no-pager` |
+| Live follow | `sudo journalctl -f` |
+| Last hour | `sudo journalctl --since "1 hour ago"` |
+| Time range | `sudo journalctl --since "2026-11-19 06:00" --until "2026-11-19 07:00"` |
 
-```bash
-sudo journalctl -p err -b
-```
+---
 
-## 3. Inspect a service
+## 2. 🚨 Filter by severity
 
-For SSH service logs:
+| Level | Command |
+|-------|---------|
+| ⚠️ Warning and worse | `sudo journalctl -p warning -b` |
+| ❌ Error and worse | `sudo journalctl -p err -b` |
+| 🔥 Critical only | `sudo journalctl -p crit -b` |
 
-```bash
-sudo journalctl -u sshd -b
-```
+> [!TIP]
+> Severity order: `emerg → alert → crit → err → warning → notice → info → debug`
 
-Follow SSH service logs live:
+---
 
-```bash
-sudo journalctl -u sshd -f
-```
-
-## 4. Interactive log analysis with service colours
-
-For lnav's structured journal view, output journal entries as JSON. lnav includes a built-in `journald_json_log` format that syntax-colours the systemd unit, program identifier, and PID as identifiers. This applies to journal entries from different services; it is not limited to SSH.
-
-Current boot:
-
-```bash
-sudo journalctl -b -o json --no-pager | lnav -
-```
-
-Recent entries:
-
-```bash
-sudo journalctl -n 200 -o json --no-pager | lnav -
-```
-
-SSH service entries:
+## 3. 🛠️ Inspect a service
 
 ```bash
-sudo journalctl -u sshd -b -o json --no-pager | lnav -
+sudo journalctl -u sshd -b          # SSH logs, this boot
+sudo journalctl -u sshd -f          # follow live
+sudo journalctl -u nginx --since "1 hour ago"
+systemctl status sshd               # current state
+systemctl --failed                  # all failed services
 ```
 
-Follow new entries:
+---
+
+## 4. 🎨 Interactive analysis with lnav
+
+lnav's built-in `journald_json_log` format colours the systemd unit, program and PID. Feed it JSON:
 
 ```bash
-sudo journalctl -f -o json --no-pager | lnav -
+sudo journalctl -b -o json --no-pager | lnav -                 # current boot
+sudo journalctl -n 200 -o json --no-pager | lnav -             # recent
+sudo journalctl -u sshd -b -o json --no-pager | lnav -         # one service
+sudo journalctl -f -o json --no-pager | lnav -                 # live
 ```
 
-In lnav, press `q` to quit and `/` to search. Use `e` and `w` to navigate error and warning entries where supported by the current view.
+### ⌨️ lnav keys
 
-**Why JSON output?** The normal human-readable `journalctl` output is useful for everyday reading. JSON exposes structured fields such as `_SYSTEMD_UNIT`, `SYSLOG_IDENTIFIER`, and `_PID`, which lnav's built-in journal format can display and syntax-colour individually.
+| Key | Action |
+|-----|--------|
+| `/` | Search |
+| `e` / `E` | Next / previous **error** |
+| `w` / `W` | Next / previous **warning** |
+| `q` | Quit |
 
-## 5. Inspect traditional log files
+> [!NOTE]
+> **Why JSON?** It exposes fields like `_SYSTEMD_UNIT`, `SYSLOG_IDENTIFIER`, `_PID`, which lnav colours individually.
 
-Amazon Linux 2023 primarily uses systemd-journald. Traditional files may or may not exist on a given installation. Check before opening one:
+---
+
+## 5. 📂 Traditional log files
+
+AL2023 mainly uses journald. Check what exists first:
 
 ```bash
 ls -l /var/log
-```
-
-If the file exists, open it with lnav. For example:
-
-```bash
 sudo lnav /var/log/messages
 ```
 
-Do not assume `/var/log/secure` exists; use the SSH journal commands above when it does not.
+> [!WARNING]
+> Don't assume `/var/log/secure` exists. Use `sudo journalctl -u sshd` when it doesn't.
 
-## 6. Search logs with grep
+---
 
-Search journal output for common problem terms:
+## 6. 🔎 Search with grep
 
 ```bash
 sudo journalctl -b --no-pager | grep -iE 'error|failed|denied|warning'
 ```
 
-## Command-line learning principle
+---
 
-Learn the standard Linux commands first: `journalctl`, `grep`, `less`, `tail`, and `ls`. Tools such as `lnav` enhance inspection and analysis; they do not replace the underlying Linux commands.
+## 7. ⚡ Log toolkit shortcuts (Section 11)
+
+Installed by the Linux-Color log toolkit. Run `source ~/.bashrc` after install.
+
+| Shortcut | What it does |
+|----------|--------------|
+| `jerr` | Last 50 errors this boot |
+| `jf` | Follow the journal live |
+| `jsvc <unit>` | Journal of one service |
+| `errs <path>` | Recursive search for error/fail/denied/timeout/oom |
+| `lg` | Open `/var/log` in lnav |
+| `biglogs` | 15 largest files in `/var/log` |
+| `hl` | Colour errors 🔴 and warnings 🟡 in piped output |
+| `topip <file>` | Top 10 client IPs |
+| `top404 <file>` | Top 10 URLs returning 404 |
+
+```bash
+sudo journalctl -f | hl
+jsvc nginx --since "30 min ago"
+topip /var/log/nginx/access.log
+```
+
+---
+
+## 8. 📊 Access-log analysis
+
+```bash
+# Requests per status code
+awk '{print $9}' access.log | sort | uniq -c | sort -rn
+
+# Top requested URLs
+awk '{print $7}' access.log | sort | uniq -c | sort -rn | head
+
+# Visual terminal report
+goaccess access.log --log-format=COMBINED
+
+# JSON logs
+cat app.log | jq 'select(.level=="ERROR")'
+```
+
+> [!NOTE]
+> `topip` and `top404` assume a standard web access-log layout where the client IP is field 1, the request path is field 7, and the status code is field 9.
+
+---
+
+## 9. 💾 Disk & performance checks
+
+| Problem | Command |
+|---------|---------|
+| Disk full? | `df -h` |
+| Which folder is big? | `sudo ncdu /` |
+| Big logs | `biglogs` |
+| Live CPU/memory | `htop` |
+| Disk I/O | `iostat -x 2 5` |
+| Memory | `free -h` |
+| OOM kills | `sudo journalctl -k | grep -i oom` |
+| Open ports | `ports` |
+
+---
+
+## 10. 🗓️ Daily practice plan
+
+| Day | Practice |
+|-----|----------|
+| Mon | `jerr`, find one error, explain it |
+| Tue | `jsvc sshd`, read login attempts |
+| Wed | `lg`, navigate with `e` / `w` |
+| Thu | `topip` and `top404` on a web log |
+| Fri | Break something (stop a service), find it in logs |
+
+---
+
+## 🎯 Golden rules
+
+1. 🕐 **Time first**: narrow to the incident window.
+2. 🚨 **Errors first**: `-p err`, then widen.
+3. 🔗 **Follow the chain**: first error is usually the cause, not the last.
+4. 🧠 **Learn the basics**: `journalctl`, `grep`, `less`, `tail`. Tools like `lnav` enhance them, they don't replace them.
+
+<div align="center">
+
+*Made for the Onboarding Free-Tier AWS series* ☁️
+
+</div>
