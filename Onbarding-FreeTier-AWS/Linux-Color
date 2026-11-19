@@ -118,7 +118,7 @@ cat >> "$HOME/.bashrc" <<'EOF'
 
 # Linux-Color: eza aliases
 if command -v eza >/dev/null 2>&1; then
-  alias ls='eza --icons=auto --color=always'
+  # Keep native ls unchanged; use eza explicitly when desired.
   alias ll='eza -lah --icons=auto --git --group-directories-first'
   alias la='eza -a --icons=auto --group-directories-first'
   alias lt='eza --tree --level=2 --icons=auto'
