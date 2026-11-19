@@ -145,14 +145,15 @@ fi
 
 # --- 11. Log analysis toolkit (additive, safe to re-run) ---
 echo "==> Installing log analysis tools..."
-for pkg in jq htop ncdu sysstat goaccess; do
-  sudo dnf install -y "$pkg" || echo "NOTE: $pkg unavailable in DNF; continuing."
-done
+sudo dnf install -y jq htop ncdu sysstat goaccess || \
+  echo "NOTE: One or more optional log-analysis packages were unavailable; continuing."
 
-if ! grep -q "Linux-Color: log toolkit" "$HOME/.bashrc" 2>/dev/null; then
-cat >> "$HOME/.bashrc" <<'EOF'
-
-# Linux-Color: log toolkit
+# Keep shortcuts separate: native Linux commands remain the primary way to learn.
+TOOLKIT_DIR="$HOME/.config/linux-color"
+mkdir -p "$TOOLKIT_DIR"
+cat > "$TOOLKIT_DIR/log-toolkit.sh" <<'EOF'
+# Linux-Color: optional log-analysis shortcuts
+# Learn the equivalent native commands in LOG-ANALYSIS.md first.
 alias jerr='sudo journalctl -p err -b --no-pager | tail -50'
 alias jf='sudo journalctl -f'
 alias jsvc='sudo journalctl -u'
@@ -160,29 +161,18 @@ alias errs='sudo grep -rniE "error|fail|fatal|denied|timeout|oom|segfault"'
 alias lg='sudo lnav /var/log'
 alias biglogs='sudo du -ah /var/log 2>/dev/null | sort -rh | head -15'
 
-# Colour errors red, warnings yellow
 hl() {
   sed -u -e 's/.*\(ERROR\|error\|FATAL\|fatal\|Failed\|failed\).*/\x1b[31m&\x1b[0m/' \
          -e 's/.*\(WARN\|warn\).*/\x1b[33m&\x1b[0m/'
 }
 
-# Access-log helpers
 topip()  { awk '{print $1}' "$1" | sort | uniq -c | sort -rn | head -10; }
 top404() { awk '$9==404{print $7}' "$1" | sort | uniq -c | sort -rn | head -10; }
-
-# Coloured man pages
-export LESS_TERMCAP_md=$'\e[1;31m'
-export LESS_TERMCAP_us=$'\e[1;32m'
-export LESS_TERMCAP_so=$'\e[1;44;33m'
-export LESS_TERMCAP_me=$'\e[0m' LESS_TERMCAP_ue=$'\e[0m' LESS_TERMCAP_se=$'\e[0m'
-
-# Better history
-export HISTSIZE=50000 HISTFILESIZE=100000 HISTTIMEFORMAT='%F %T '
-export HISTCONTROL=ignoredups:erasedups
-shopt -s histappend
-PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
 EOF
-fi
+
+echo "Optional shortcuts saved to: $TOOLKIT_DIR/log-toolkit.sh"
+echo "To enable them in this session: source $TOOLKIT_DIR/log-toolkit.sh"
+echo "Native Linux commands remain available and unchanged."
 
 # --- 10. Completion and verification ---
 echo
