@@ -31,7 +31,7 @@
 | 10 | [🗓️ Practice plan](#10-️-daily-practice-plan) | Build the skill |
 
 > [!NOTE]
- > **Learning rule:** use the native command first. Optional Linux-Color shortcuts are separate and never replace or rename standard commands.
+> **Learning rule:** use the native command first. Optional Linux-Color shortcuts are separate and never replace or rename standard commands.
 
 ---
 
@@ -152,23 +152,6 @@ They are available only in the current shell session unless you choose to source
 - `uniq -c` counts adjacent repeated lines (sort first).
 - `head` limits the displayed results.
 - `du -ah` reports file and directory sizes.
-
-----------|--------------|
-| `jerr` | Last 50 errors this boot |
-| `jf` | Follow the journal live |
-| `jsvc <unit>` | Journal of one service |
-| `errs <path>` | Recursive search for error/fail/denied/timeout/oom |
-| `lg` | Open `/var/log` in lnav |
-| `biglogs` | 15 largest files in `/var/log` |
-| `hl` | Colour errors 🔴 and warnings 🟡 in piped output |
-| `topip <file>` | Top 10 client IPs |
-| `top404 <file>` | Top 10 URLs returning 404 |
-
-```bash
-sudo journalctl -f | hl
-jsvc nginx --since "30 min ago"
-topip /var/log/nginx/access.log
-```
 
 ---
 
