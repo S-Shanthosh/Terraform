@@ -31,7 +31,7 @@
 | 10 | [🗓️ Practice plan](#10-️-daily-practice-plan) | Build the skill |
 
 > [!NOTE]
-> **Learning rule:** use the native command first. Optional Linux-Color shortcuts are separate and never replace or rename standard commands.
+> **Learning rule:** use native commands first. Linux-Color shortcuts are optional; standard commands such as `ls` remain unchanged. Run `eza` explicitly when you want its enhanced view.
 
 ---
 
