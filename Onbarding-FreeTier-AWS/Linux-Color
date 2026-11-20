@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Linux-Color — terminal setup for Amazon Linux 2023
+# Linux-Color — browser-terminal colours for Amazon Linux 2023
+# Target: EC2 Instance Connect in Chrome/Edge (no Nerd Font, so no icons)
 # Supports x86_64 and aarch64 where release assets are available.
+# Safe to re-run: colour settings live in ~/.bashrc.d/10-colors.sh
 set -Eeuo pipefail
 
 # --- 0. Platform check ---
@@ -19,23 +21,11 @@ esac
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
+# curl is not listed: AL2023 ships curl-minimal, which conflicts with full curl.
 echo "==> Installing base packages..."
-sudo dnf install -y git make gawk python3-pip unzip curl-minimal tar
+sudo dnf install -y git make gawk python3-pip unzip tar
 
-# --- 1. Classic colour support ---
-if ! grep -q "Linux-Color: classic colours" "$HOME/.bashrc" 2>/dev/null; then
-cat >> "$HOME/.bashrc" <<'EOF'
-
-# Linux-Color: classic colours
-alias grep='grep --color=auto'
-alias egrep='egrep --color=auto'
-alias diff='diff --color=auto'
-export LESS='-R'
-export MANPAGER='less -R'
-EOF
-fi
-
-# --- 2. ble.sh: interactive syntax highlighting and suggestions ---
+# --- 1. ble.sh: interactive syntax highlighting and suggestions ---
 if [ ! -f "$HOME/.local/share/blesh/ble.sh" ]; then
   echo "==> Installing ble.sh..."
   git clone --recursive --depth 1 --shallow-submodules \
@@ -46,13 +36,13 @@ if ! grep -Fq 'source ~/.local/share/blesh/ble.sh' "$HOME/.bashrc"; then
   echo '[[ $- == *i* ]] && source ~/.local/share/blesh/ble.sh' >> "$HOME/.bashrc"
 fi
 
-# --- 3. lolcat: rainbow output (best effort) ---
+# --- 2. lolcat: rainbow output (best effort) ---
 if ! command -v lolcat >/dev/null 2>&1; then
   echo "==> Installing lolcat (optional)..."
   python3 -m pip install --user lolcat || echo "NOTE: lolcat could not be installed; continuing."
 fi
 
-# --- 4. lnav: log file viewer ---
+# --- 3. lnav: log file viewer ---
 if ! command -v lnav >/dev/null 2>&1; then
   if [ "$ARCH" = "x86_64" ]; then
     echo "==> Installing lnav..."
@@ -65,14 +55,14 @@ if ! command -v lnav >/dev/null 2>&1; then
   fi
 fi
 
-# --- 5. bat: syntax-highlighted cat ---
+# --- 4. bat: syntax-highlighted cat ---
 if ! command -v bat >/dev/null 2>&1; then
   echo "==> Installing bat (optional DNF COPR)..."
   sudo dnf copr enable -y fcsm/bat || true
   sudo dnf install -y bat || echo "NOTE: bat was unavailable from DNF; continuing."
 fi
 
-# --- 6. Modern CLI tools: ripgrep and fd ---
+# --- 5. Modern CLI tools: ripgrep and fd ---
 case "$ARCH" in
   x86_64)  TRIPLE="x86_64-unknown-linux-musl" ;;
   aarch64) TRIPLE="aarch64-unknown-linux-musl" ;;
@@ -94,7 +84,7 @@ if ! command -v fd >/dev/null 2>&1; then
   sudo install -m 0755 "$WORKDIR"/fd-v10.2.0-*/fd /usr/local/bin/fd
 fi
 
-# --- 7. eza: modern ls with icons, colours and tree view ---
+# --- 6. eza: coloured ls with tree view ---
 if ! command -v eza >/dev/null 2>&1; then
   case "$ARCH" in
     x86_64)  EZA_ARCH="x86_64-unknown-linux-gnu" ;;
@@ -112,40 +102,70 @@ if ! command -v eza >/dev/null 2>&1; then
   sudo install -m 0755 "$EZA_BIN" /usr/local/bin/eza
 fi
 
-# --- 8. Useful aliases: eza replaces ls only after successful install ---
-if ! grep -q "Linux-Color: eza aliases" "$HOME/.bashrc" 2>/dev/null; then
-cat >> "$HOME/.bashrc" <<'EOF'
+# --- 7. 256-colour TERM (loads first, before ble.sh) ---
+mkdir -p "$HOME/.bashrc.d"
+echo 'export TERM=xterm-256color' > "$HOME/.bashrc.d/00-term.sh"
 
-# Linux-Color: eza aliases
-if command -v eza >/dev/null 2>&1; then
-  # Keep native ls unchanged; use eza explicitly when desired.
-  alias ll='eza -lah --icons=auto --git --group-directories-first'
-  alias la='eza -a --icons=auto --group-directories-first'
-  alias lt='eza --tree --level=2 --icons=auto'
-fi
-alias c='clear'
-alias ..='cd ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
-alias h='history'
-alias ports='ss -tulpen'
-EOF
-fi
+# --- 8. All colour settings in one managed file (overwritten on each run) ---
+cat > "$HOME/.bashrc.d/10-colors.sh" <<'BASHRC_D'
+# ===== Linux-Color (managed file; edits are overwritten on re-run) =====
 
-# --- 9. Coloured prompt ---
-if ! grep -q "Linux-Color: custom prompt" "$HOME/.bashrc" 2>/dev/null; then
-cat >> "$HOME/.bashrc" <<'EOF'
+# ls -> eza: colours, folders first, text markers (no icons in a browser terminal)
+alias ls='eza -F --group-directories-first'
+alias ll='eza -lahF --git --group-directories-first --color-scale=size'
+alias la='eza -aF --group-directories-first'
+alias lt='eza --tree --level=2 -F'
+# Real ls any time:  \ls   or   command ls
 
-# Linux-Color: custom prompt
+# grep / diff / ip / systemd: colour on screen, plain in pipes
+export GREP_COLORS='ms=1;33:mc=1;33:fn=35:ln=32:se=36'
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias diff='diff --color=auto'
+alias ip='ip -c=auto'
+export SYSTEMD_COLORS=true
+
+# Pagers and man pages
+export LESS='-R'
+export MANPAGER='less -R'
+export LESS_TERMCAP_md=$'\e[1;36m'
+export LESS_TERMCAP_us=$'\e[1;32m'
+export LESS_TERMCAP_so=$'\e[1;43;30m'
+export LESS_TERMCAP_me=$'\e[0m'
+export LESS_TERMCAP_ue=$'\e[0m'
+export LESS_TERMCAP_se=$'\e[0m'
+
+# Prompt: purple user@host, yellow directory
 if [[ $- == *i* ]]; then
   PS1='\[\e[1;35m\][\u@\h\[\e[0m\] \[\e[1;33m\]\W\[\e[0m\]]\$ '
 fi
-EOF
+
+# Palette test: run  colors256
+colors256() {
+  for i in {0..255}; do printf '\e[48;5;%sm  ' "$i"; done
+  printf '\e[0m\n'
+}
+# ===== End Linux-Color =====
+BASHRC_D
+
+# Load the managed file LAST so older aliases in .bashrc cannot override it.
+if ! grep -Fq 'Linux-Color loader' "$HOME/.bashrc"; then
+  {
+    echo ''
+    echo '# Linux-Color loader (keep as the last line)'
+    echo '[ -f ~/.bashrc.d/10-colors.sh ] && source ~/.bashrc.d/10-colors.sh'
+  } >> "$HOME/.bashrc"
 fi
 
-# --- 11. Log analysis toolkit (additive, safe to re-run) ---
+# --- 9. lnav theme (best effort) ---
+if command -v lnav >/dev/null 2>&1; then
+  lnav -n -c ':config /ui/theme night-owl' >/dev/null 2>&1 \
+    || echo "NOTE: could not set lnav theme; run  :config /ui/theme night-owl  inside lnav."
+fi
+
+# --- 10. Log analysis toolkit (additive, safe to re-run) ---
 echo "==> Installing log analysis tools..."
-sudo dnf install -y jq htop ncdu sysstat goaccess || \
+sudo dnf install -y jq htop sysstat || \
   echo "NOTE: One or more optional log-analysis packages were unavailable; continuing."
 
 # Keep shortcuts separate: native Linux commands remain the primary way to learn.
@@ -174,7 +194,7 @@ echo "Optional shortcuts saved to: $TOOLKIT_DIR/log-toolkit.sh"
 echo "To enable them in this session: source $TOOLKIT_DIR/log-toolkit.sh"
 echo "Native Linux commands remain available and unchanged."
 
-# --- 10. Completion and verification ---
+# --- 11. Completion and verification ---
 echo
 echo "========== Linux-Color installation summary =========="
 for tool in eza rg fd bat lnav lolcat; do
@@ -188,17 +208,7 @@ echo "======================================================"
 echo
 echo "Linux setup complete. Activate with:"
 echo "  source ~/.bashrc"
-
+echo "Palette test:  colors256"
+echo "Log viewer:    sudo lnav /var/log/dnf.log"
 echo
 echo "Log analysis guide: Onbarding-FreeTier-AWS/LOG-ANALYSIS.md"
-echo
-echo "========== WINDOWS / WINDOWS TERMINAL STEPS =========="
-echo "1. Download JetBrainsMono Nerd Font:"
-echo "   https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
-echo "2. Extract the ZIP. Install the .ttf files (not README or other files)."
-echo "3. Fully close and reopen Windows Terminal."
-echo "4. Windows Terminal > Settings > Defaults (or your WSL profile) > Appearance."
-echo "5. Set Font face to: JetBrainsMono Nerd Font"
-echo "6. Save, open WSL, SSH to this Linux machine, and run: eza --icons=always -lah"
-echo "Note: Windows fonts are installed on the client computer, not on this Linux server."
-echo "======================================================"
