@@ -101,6 +101,56 @@ Examples:
 
 ---
 
+
+### Two terminal profiles: Chrome EC2 vs Windows WSL
+
+The same repository supports two terminal environments, but the display settings should differ because the available fonts differ.
+
+| Environment | Icon setting | Reason |
+|---|---|---|
+| EC2 Instance Connect opened in Chrome | **Icons off** | Browser terminals may not have a Nerd Font, so icon glyphs can appear as missing boxes or symbols |
+| Ubuntu on WSL, opened in Windows Terminal | **Icons on** | Windows Terminal can be configured with a Nerd Font, allowing eza's file and folder icons to render |
+
+#### A. Chrome browser — EC2 Instance Connect (Amazon Linux 2023)
+
+The `Linux-Color` installer uses an icon-free eza listing for browser compatibility:
+
+```bash
+alias ls='eza -F --group-directories-first'
+```
+
+Keep this profile on the EC2 instance when connecting through the AWS browser terminal. It still provides colour and folder-first sorting without depending on icon fonts.
+
+#### B. Windows — Ubuntu on WSL (Windows Terminal)
+
+In your WSL Ubuntu user's `~/.bashrc`, add:
+
+```bash
+alias ls='eza --color=always --icons=always'
+```
+
+Then reload and test:
+
+```bash
+source ~/.bashrc
+ls
+eza --icons=always
+```
+
+For icons to display correctly, set a Nerd Font (for example, a Nerd Font variant of a monospaced font) as the font in Windows Terminal's Ubuntu profile. The font is configured in Windows Terminal, not inside the EC2 instance.
+
+#### Persistence and scope
+
+- WSL alias settings are stored in `/home/<your-user>/.bashrc` and persist across WSL shutdowns, terminal closures and distro restarts.
+- EC2 settings are stored in the EC2 user's home directory and persist across instance reboots when that home directory is on the instance's persistent EBS-backed root volume.
+- These are separate machines and separate home directories. Updating the WSL file does not update EC2, and updating EC2 does not update WSL. Keep both profiles documented here and apply the matching setup in each environment.
+- If you terminate and replace an EC2 instance, the settings only carry over if the relevant home directory or configuration is restored from persistent storage or backup.
+
+> [!IMPORTANT]
+> Do not enable `--icons=always` on the Chrome EC2 browser profile unless that terminal is configured with a compatible Nerd Font. Use the icon-free profile there; use the icon-enabled profile in Windows Terminal/WSL.
+
+---
+
 ## 3. 🖥️ Terminal colour behaviour
 
 Linux-Color uses `eza` for enhanced directory listings.
